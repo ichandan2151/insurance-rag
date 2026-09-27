@@ -1,0 +1,26 @@
+/* Insurance RAG — custom styles */
+body {
+  background-color: #f8f9fa;
+}
+
+.card {
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  margin-bottom: 1rem;
+}
+
+.card-header {
+  background-color: #fff;
+  border-bottom: 1px solid #eee;
+}
+
+.navbar-brand {
+  font-weight: 600;
+}
+
+.table th {
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  color: #6c757d;
+}

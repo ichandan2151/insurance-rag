@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Ask a Question — Insurance RAG{% endblock %}
+{% block content %}
+<h2 class="mb-4">Ask a Question</h2>
+<div class="row">
+  <div class="col-md-8">
+    <div class="card mb-4">
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="id_question" class="form-label">Your Question</label>
+            {{ form.question }}
+          </div>
+          <button type="submit" class="btn btn-primary">Get Answer</button>
+        </form>
+      </div>
+    </div>
+
+    {% if result %}
+    <div class="card mb-4">
+      <div class="card-header"><strong>Answer</strong>
+        {% if result.model %}<span class="badge bg-info ms-2">{{ result.model }}</span>{% endif %}
+      </div>
+      <div class="card-body">
+        <p style="white-space: pre-wrap;">{{ result.answer }}</p>
+      </div>
+    </div>
+
+    {% if result.sources %}
+    <div class="card">
+      <div class="card-header"><strong>Sources ({{ result.sources|length }})</strong></div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <thead>
+            <tr><th>Document</th><th>Page</th><th>Relevance</th><th>Excerpt</th></tr>
+          </thead>
+          <tbody>
+            {% for src in result.sources %}
+            <tr>
+              <td>{{ src.title|default:src.filename }}</td>
+              <td>{{ src.page_number }}</td>
+              <td>{{ src.similarity|floatformat:2 }}</td>
+              <td><small>{{ src.excerpt|truncatechars:150 }}</small></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header"><strong>Tips</strong></div>
+      <div class="card-body">
+        <ul class="mb-0">
+          <li>Ask specific questions about policy coverage, limits, exclusions, or conditions.</li>
+          <li>The system cites sources with document name and page number.</li>
+          <li>Answers are based only on indexed documents — upload policies first.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

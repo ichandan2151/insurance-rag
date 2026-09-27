@@ -1,0 +1,74 @@
+[
+  {
+    "question": "What is the dwelling coverage limit on the homeowners policy?",
+    "expected_answer": "The dwelling coverage (Coverage A) limit is $350,000.",
+    "source_document": "homeowners_policy.pdf",
+    "source_page": 1
+  },
+  {
+    "question": "What perils are covered under personal property in the homeowners policy?",
+    "expected_answer": "Personal property (Coverage C) is covered against 16 named perils: fire or lightning, windstorm or hail, explosion, riot or civil commotion, aircraft, vehicles, smoke, vandalism or malicious mischief, theft, falling objects, weight of ice/snow/sleet, accidental discharge or overflow of water or steam, sudden and accidental tearing apart/cracking/burning/bulging, freezing, sudden and accidental damage from artificially generated electrical current, and volcanic eruption.",
+    "source_document": "homeowners_policy.pdf",
+    "source_page": 3
+  },
+  {
+    "question": "Is flood damage covered under the homeowners policy?",
+    "expected_answer": "No. Flood damage is explicitly excluded under the Water Damage exclusion in Section I. This includes flood, surface water, waves, tidal water, overflow of a body of water, and water that backs up through sewers or drains.",
+    "source_document": "homeowners_policy.pdf",
+    "source_page": 4
+  },
+  {
+    "question": "What is the personal liability limit in the homeowners policy?",
+    "expected_answer": "The personal liability limit (Coverage E) is $300,000 per occurrence.",
+    "source_document": "homeowners_policy.pdf",
+    "source_page": 1
+  },
+  {
+    "question": "What is the deductible for collision coverage on the auto policy?",
+    "expected_answer": "The collision deductible is $500.",
+    "source_document": "auto_insurance_policy.pdf",
+    "source_page": 1
+  },
+  {
+    "question": "What are the bodily injury liability limits on the auto policy?",
+    "expected_answer": "The bodily injury liability limits are $100,000 per person and $300,000 per accident.",
+    "source_document": "auto_insurance_policy.pdf",
+    "source_page": 1
+  },
+  {
+    "question": "What qualifies as an uninsured motor vehicle under the auto policy?",
+    "expected_answer": "An uninsured motor vehicle is one to which no bodily injury liability bond or policy applies, one where the insurer denies coverage or is insolvent, or a hit-and-run vehicle whose operator or owner cannot be identified.",
+    "source_document": "auto_insurance_policy.pdf",
+    "source_page": 3
+  },
+  {
+    "question": "What is the death benefit amount on the term life policy?",
+    "expected_answer": "The death benefit (face amount) is $500,000.",
+    "source_document": "term_life_policy.pdf",
+    "source_page": 1
+  },
+  {
+    "question": "Can the term life policy be converted to a permanent policy?",
+    "expected_answer": "Yes. The policy may be converted to a permanent life insurance policy (whole life or universal life) without evidence of insurability, as long as the conversion is requested before the insured reaches age 65 or before the end of the 20-year level term period, whichever is earlier.",
+    "source_document": "term_life_policy.pdf",
+    "source_page": 4
+  },
+  {
+    "question": "What is the suicide exclusion period in the term life policy?",
+    "expected_answer": "If the insured dies by suicide within two years from the date of issue, the company's liability is limited to a return of premiums paid without interest.",
+    "source_document": "term_life_policy.pdf",
+    "source_page": 3
+  },
+  {
+    "question": "What is the accelerated death benefit provision in the term life policy?",
+    "expected_answer": "If the insured is diagnosed with a terminal illness with a life expectancy of 12 months or less, the policy owner may request an accelerated payment of up to 75% of the face amount. The remaining 25% is paid to the beneficiary upon death. A $150 administrative fee is deducted from the accelerated payment.",
+    "source_document": "term_life_policy.pdf",
+    "source_page": 2
+  },
+  {
+    "question": "What are the duties of the insured after a loss under the homeowners policy?",
+    "expected_answer": "After a loss, the insured must: give prompt notice to the insurer, notify police in case of theft, notify credit card companies if applicable, protect property from further damage, cooperate in the investigation, prepare an inventory of damaged personal property showing quantity, description, actual cash value, and amount of loss, and submit a signed sworn proof of loss within 60 days after requested.",
+    "source_document": "homeowners_policy.pdf",
+    "source_page": 6
+  }
+]

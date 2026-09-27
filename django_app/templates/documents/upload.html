@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Upload Document — Insurance RAG{% endblock %}
+{% block content %}
+<h2 class="mb-4">Upload Policy Document</h2>
+<div class="row">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="id_title" class="form-label">Document Title</label>
+            {{ form.title }}
+            {% if form.title.errors %}<div class="text-danger">{{ form.title.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="mb-3">
+            <label for="id_file" class="form-label">PDF File</label>
+            {{ form.file }}
+            <div class="form-text">{{ form.file.help_text }}</div>
+            {% if form.file.errors %}<div class="text-danger">{{ form.file.errors.0 }}</div>{% endif %}
+          </div>
+          <button type="submit" class="btn btn-primary">Upload &amp; Index</button>
+          <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary ms-2">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><strong>How it works</strong></div>
+      <div class="card-body">
+        <ol>
+          <li>Upload a PDF insurance policy document.</li>
+          <li>The document is sent to the RAG microservice for processing.</li>
+          <li>Text is extracted, chunked, and embedded into the vector database.</li>
+          <li>Once indexed, you can ask questions about the policy on the <a href="{% url 'query' %}">Query</a> page.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

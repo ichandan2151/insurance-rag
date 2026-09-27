@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Documents — Insurance RAG{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2>Policy Documents</h2>
+  <a href="{% url 'upload' %}" class="btn btn-primary">Upload New</a>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr><th>Title</th><th>Filename</th><th>Status</th><th>Pages</th><th>Chunks</th><th>Uploaded By</th><th>Date</th></tr>
+      </thead>
+      <tbody>
+        {% for doc in documents %}
+        <tr>
+          <td><a href="{% url 'document_detail' doc.pk %}">{{ doc.title }}</a></td>
+          <td><code>{{ doc.filename }}</code></td>
+          <td>
+            <span class="badge bg-{% if doc.status == 'indexed' %}success{% elif doc.status == 'failed' %}danger{% else %}warning{% endif %}">
+              {{ doc.get_status_display }}
+            </span>
+          </td>
+          <td>{{ doc.page_count|default:"-" }}</td>
+          <td>{{ doc.chunk_count|default:"-" }}</td>
+          <td>{{ doc.uploaded_by|default:"—" }}</td>
+          <td>{{ doc.uploaded_at|date:"M d, Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-muted text-center p-4">No documents uploaded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

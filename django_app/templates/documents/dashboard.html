@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Insurance RAG{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2>Dashboard</h2>
+  <div>
+    <span class="badge bg-{{ rag_status|yesno:'success,danger' }}">
+      RAG Service: {{ rag_status }}
+    </span>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h4>{{ stats.total_documents }}</h4>
+        <p class="text-muted mb-0">Total Documents</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h4 class="text-success">{{ stats.indexed }}</h4>
+        <p class="text-muted mb-0">Indexed</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h4 class="text-warning">{{ stats.pending }}</h4>
+        <p class="text-muted mb-0">Processing</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center">
+      <div class="card-body">
+        <h4 class="text-danger">{{ stats.failed }}</h4>
+        <p class="text-muted mb-0">Failed</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between">
+        <strong>Recent Documents</strong>
+        <a href="{% url 'upload' %}" class="btn btn-primary btn-sm">Upload New</a>
+      </div>
+      <div class="card-body p-0">
+        {% if documents %}
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr><th>Title</th><th>Status</th><th>Pages</th><th>Uploaded</th></tr>
+          </thead>
+          <tbody>
+            {% for doc in documents %}
+            <tr>
+              <td><a href="{% url 'document_detail' doc.pk %}">{{ doc.title }}</a></td>
+              <td>
+                <span class="badge bg-{% if doc.status == 'indexed' %}success{% elif doc.status == 'failed' %}danger{% else %}warning{% endif %}">
+                  {{ doc.get_status_display }}
+                </span>
+              </td>
+              <td>{{ doc.page_count|default:"-" }}</td>
+              <td>{{ doc.uploaded_at|date:"M d, Y" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="p-3 text-muted mb-0">No documents yet. <a href="{% url 'upload' %}">Upload your first policy.</a></p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header"><strong>Recent Activity</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for log in recent_logs %}
+        <li class="list-group-item">
+          <small class="text-muted">{{ log.timestamp|date:"M d H:i" }}</small>
+          <span class="badge bg-secondary ms-1">{{ log.get_action_display }}</span>
+          <br><small>{{ log.detail|truncatechars:60 }}</small>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted">No activity yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

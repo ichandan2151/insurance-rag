@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ document.title }} — Insurance RAG{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'document_list' %}">Documents</a></li>
+    <li class="breadcrumb-item active">{{ document.title }}</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card mb-4">
+      <div class="card-header"><strong>Document Details</strong></div>
+      <div class="card-body">
+        <table class="table table-borderless mb-0">
+          <tr><th style="width:160px">Title</th><td>{{ document.title }}</td></tr>
+          <tr><th>Filename</th><td><code>{{ document.filename }}</code></td></tr>
+          <tr>
+            <th>Status</th>
+            <td>
+              <span class="badge bg-{% if document.status == 'indexed' %}success{% elif document.status == 'failed' %}danger{% else %}warning{% endif %}">
+                {{ document.get_status_display }}
+              </span>
+            </td>
+          </tr>
+          <tr><th>Pages</th><td>{{ document.page_count|default:"N/A" }}</td></tr>
+          <tr><th>Chunks</th><td>{{ document.chunk_count|default:"N/A" }}</td></tr>
+          <tr><th>Uploaded By</th><td>{{ document.uploaded_by|default:"—" }}</td></tr>
+          <tr><th>Uploaded At</th><td>{{ document.uploaded_at|date:"M d, Y H:i" }}</td></tr>
+          <tr><th>RAG Document ID</th><td>{{ document.rag_document_id|default:"—" }}</td></tr>
+          {% if document.error_message %}
+          <tr><th>Error</th><td class="text-danger">{{ document.error_message }}</td></tr>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header"><strong>Related Activity</strong></div>
+      <ul class="list-group list-group-flush">
+        {% for log in logs %}
+        <li class="list-group-item">
+          <small class="text-muted">{{ log.timestamp|date:"M d H:i" }}</small>
+          <span class="badge bg-secondary">{{ log.get_action_display }}</span>
+          <br><small>{{ log.detail|truncatechars:80 }}</small>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted">No activity recorded.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
