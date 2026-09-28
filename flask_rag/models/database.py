@@ -6,7 +6,14 @@ from datetime import datetime, timezone
 
 from config import Config
 
-engine = create_engine(Config.DATABASE_URL)
+engine = create_engine(
+    Config.DATABASE_URL,
+    pool_size=10,
+    max_overflow=20,
+    pool_timeout=30,
+    pool_pre_ping=True,
+    pool_recycle=1800,
+)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 
@@ -45,8 +52,16 @@ class GoldenQA(Base):
 
 
 def init_db():
-    """Create tables and enable pgvector extension."""
+    """Create tables, enable pgvector extension, and build vector indexes."""
     with engine.connect() as conn:
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         conn.commit()
     Base.metadata.create_all(engine)
+    with engine.connect() as conn:
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_chunks_embedding_hnsw
+            ON chunks
+            USING hnsw (embedding vector_cosine_ops)
+            WITH (m = 16, ef_construction = 64)
+        """))
+        conn.commit()

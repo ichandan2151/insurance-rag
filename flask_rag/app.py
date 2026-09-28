@@ -1,6 +1,7 @@
 """Insurance RAG Microservice — Flask API."""
 import os
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 
@@ -103,6 +104,86 @@ def ingest():
 
 
 # ---------------------------------------------------------------------------
+# POST /ingest/bulk — Ingest multiple PDFs in one request
+# ---------------------------------------------------------------------------
+@app.route("/ingest/bulk", methods=["POST"])
+def ingest_bulk():
+    """Ingest multiple PDFs concurrently.
+
+    Send multiple files as 'files' (multipart). Returns per-file results.
+    """
+    files = request.files.getlist("files")
+    if not files:
+        return jsonify({"error": "No files provided. Send PDFs as 'files'."}), 400
+
+    pdf_files = [f for f in files if f.filename.lower().endswith(".pdf")]
+    if not pdf_files:
+        return jsonify({"error": "No PDF files found in upload."}), 400
+
+    os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
+
+    def _ingest_one(file_tuple):
+        idx, filename, filepath = file_tuple
+        session = SessionLocal()
+        try:
+            doc = Document(filename=filename, title=filename)
+            session.add(doc)
+            session.flush()
+
+            pages = extract_text_from_pdf(filepath)
+            doc.page_count = len(pages)
+            chunks = chunk_text(pages)
+            texts = [c.content for c in chunks]
+            embeddings = embed_texts(texts)
+
+            for chunk_result, embedding in zip(chunks, embeddings):
+                session.add(Chunk(
+                    document_id=doc.id,
+                    chunk_index=chunk_result.chunk_index,
+                    content=chunk_result.content,
+                    page_number=chunk_result.page_number,
+                    embedding=embedding,
+                ))
+
+            doc.status = "indexed"
+            session.commit()
+            return {"filename": filename, "document_id": doc.id,
+                    "pages": doc.page_count, "chunks": len(chunks), "status": "indexed"}
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Bulk ingest failed for {filename}: {e}")
+            return {"filename": filename, "status": "failed", "error": str(e)}
+        finally:
+            session.close()
+            if os.path.exists(filepath):
+                os.remove(filepath)
+
+    # Save all files to disk first
+    tasks = []
+    for idx, f in enumerate(pdf_files):
+        filename = secure_filename(f.filename)
+        filepath = os.path.join(Config.UPLOAD_FOLDER, f"{idx}_{filename}")
+        f.save(filepath)
+        tasks.append((idx, filename, filepath))
+
+    max_workers = min(len(tasks), int(os.getenv("INGEST_WORKERS", "4")))
+    results = []
+
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = {pool.submit(_ingest_one, t): t[1] for t in tasks}
+        for future in as_completed(futures):
+            results.append(future.result())
+
+    succeeded = sum(1 for r in results if r["status"] == "indexed")
+    return jsonify({
+        "total": len(results),
+        "succeeded": succeeded,
+        "failed": len(results) - succeeded,
+        "results": results,
+    }), 201
+
+
+# ---------------------------------------------------------------------------
 # POST /query — Retrieve relevant chunks and generate a cited answer
 # ---------------------------------------------------------------------------
 @app.route("/query", methods=["POST"])
@@ -144,9 +225,15 @@ def eval_harness():
       - top_k: number of chunks to retrieve (default: Config.TOP_K)
       - golden_set: optional inline list of {"question", "expected_answer"} dicts
                     (if omitted, uses golden_qa table in DB)
+      - workers: number of concurrent eval threads (default: 4)
+      - offset: skip first N items for pagination (default: 0)
+      - limit: evaluate at most N items (default: all)
     """
     data = request.get_json() or {}
     top_k = data.get("top_k", Config.TOP_K)
+    workers = min(data.get("workers", 4), 8)
+    offset = data.get("offset", 0)
+    limit = data.get("limit", None)
 
     # Load golden set — from request body or database
     if "golden_set" in data:
@@ -165,39 +252,31 @@ def eval_harness():
     if not golden_set:
         return jsonify({"error": "No golden set found. Add entries to golden_qa table or pass in request body."}), 400
 
-    results = []
-    total_similarity = 0.0
-    retrieval_hits = 0
+    # Apply pagination
+    golden_set = golden_set[offset:]
+    if limit is not None:
+        golden_set = golden_set[:limit]
 
-    for item in golden_set:
+    def _eval_one(item):
         question = item["question"]
         expected = item["expected_answer"]
-
         try:
             chunks = retrieve(question, top_k=top_k)
             answer_result = generate_answer(question, chunks)
 
-            # Simple evaluation metrics
             answer_lower = answer_result["answer"].lower()
             expected_lower = expected.lower()
 
-            # Keyword overlap as a rough faithfulness proxy
             expected_keywords = set(expected_lower.split())
             answer_keywords = set(answer_lower.split())
             keyword_overlap = len(expected_keywords & answer_keywords) / max(len(expected_keywords), 1)
 
-            # Average retrieval similarity
             avg_similarity = (
                 sum(c["similarity"] for c in chunks) / len(chunks) if chunks else 0.0
             )
-            total_similarity += avg_similarity
-
-            # Check if any chunk is actually relevant (similarity > 0.7)
             has_relevant_chunk = any(c["similarity"] > 0.7 for c in chunks)
-            if has_relevant_chunk:
-                retrieval_hits += 1
 
-            results.append({
+            return {
                 "question": question,
                 "expected_answer": expected,
                 "generated_answer": answer_result["answer"],
@@ -205,24 +284,38 @@ def eval_harness():
                 "avg_retrieval_similarity": round(avg_similarity, 3),
                 "has_relevant_chunk": has_relevant_chunk,
                 "num_sources": len(answer_result["sources"]),
-            })
+            }
         except Exception as e:
-            results.append({
-                "question": question,
-                "error": str(e),
-            })
+            return {"question": question, "error": str(e)}
+
+    # Process evaluations concurrently
+    results = []
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [pool.submit(_eval_one, item) for item in golden_set]
+        for future in as_completed(futures):
+            results.append(future.result())
 
     # Aggregate metrics
     n = len(golden_set)
+    successful = [r for r in results if "error" not in r]
+    total_similarity = sum(r["avg_retrieval_similarity"] for r in successful)
+    retrieval_hits = sum(1 for r in successful if r["has_relevant_chunk"])
     avg_keyword_overlap = sum(r.get("keyword_overlap", 0) for r in results) / max(n, 1)
     retrieval_precision = retrieval_hits / max(n, 1)
 
     return jsonify({
         "summary": {
             "total_questions": n,
+            "evaluated": len(successful),
+            "errors": n - len(successful),
             "avg_keyword_overlap": round(avg_keyword_overlap, 3),
             "retrieval_precision": round(retrieval_precision, 3),
             "avg_retrieval_similarity": round(total_similarity / max(n, 1), 3),
+        },
+        "pagination": {
+            "offset": offset,
+            "limit": limit,
+            "returned": len(results),
         },
         "results": results,
     })
