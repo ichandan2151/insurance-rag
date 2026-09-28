@@ -40,5 +40,12 @@ services:
       flask-rag:
         condition: service_started
 
+  frontend:
+    build: ./frontend
+    ports:
+      - "3001:3000"
+    depends_on:
+      - django
+
 volumes:
   pgdata:

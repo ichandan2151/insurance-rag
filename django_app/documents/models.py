@@ -55,8 +55,9 @@ class AuditLog(models.Model):
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
-    # For query actions — store the question and response metadata
+    # For query actions — store the question, answer, and response metadata
     query_text = models.TextField(blank=True, default="")
+    answer_text = models.TextField(blank=True, default="")
     response_model = models.CharField(max_length=100, blank=True, default="")
     source_count = models.IntegerField(null=True, blank=True)
 
